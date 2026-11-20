@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
+import createMDX from "@next/mdx";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // .mdx files under src/app are pages too (posts live at src/app/writing/(posts)/<slug>/page.mdx)
+  pageExtensions: ["ts", "tsx", "md", "mdx"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
@@ -14,4 +16,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withMDX = createMDX({
+  options: {
+    // Turbopack needs plugins by name; remark-gfm adds Markdown tables
+    remarkPlugins: ["remark-gfm"],
+  },
+});
+
+export default withMDX(nextConfig);

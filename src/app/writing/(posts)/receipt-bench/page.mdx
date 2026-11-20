@@ -1,0 +1,124 @@
+import { ResultsChart } from "@/components/ResultsChart";
+
+export const metadata = {
+  title: "I benchmarked 10 ways to read a receipt. My production pipeline came 9th.",
+  description:
+    "receipt-bench: Textract, Claude, GPT and Gemini on 148 labeled receipts, scored on whether every person's share of the bill comes out right.",
+  openGraph: {
+    type: "article",
+    title: "I benchmarked 10 ways to read a receipt. My production pipeline came 9th.",
+    description:
+      "Textract, Claude, GPT and Gemini on 148 labeled receipts, scored on whether every person's share of the bill comes out right.",
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+<p className="text-sm text-muted">November 20, 2026 · 7 min read</p>
+
+# I benchmarked 10 ways to read a receipt. My production pipeline came 9th.
+
+[SplitNShare](https://splitnshare.ai) is an iOS app I built for splitting bills item by item. You scan the receipt, tap who had what, and everyone sees what they owe. About 1,000 people have downloaded it, and they have split more than 550 bills worth over $50K.
+
+All of it depends on one step: reading the receipt correctly. If the app reads a $14 burger as $41, someone pays for food they didn't eat. I wanted to know how good that step really is, and whether newer vision models would do it better. So I built [receipt-bench](https://github.com/grkapoor17/receipt-bench), an open-source benchmark, and ran 10 extraction pipelines over 148 labeled receipts. The pipeline running in my app finished 9th.
+
+## How the app reads receipts today
+
+The production pipeline has three steps:
+
+1. **AWS Textract** reads the receipt.
+2. A **totals check** asks whether the reading adds up: do the items match the printed subtotal, and do items, tax and tip match the printed total?
+3. If not, **Claude Opus 5.5** reads the image again, using Textract's output as a hint. Its reading is kept only if it passes the same check.
+
+Most receipts pass on the first read, so the pipeline is fast: a median of 3.6 seconds in the benchmark. The second read ran on 43 of the 148 receipts and fixed 34 of them.
+
+## The setup
+
+**Receipts.** 80 receipts from my own bills in the US, Mexico and India, mostly restaurants, plus 68 receipts from [CORD](https://github.com/clovaai/cord), a public dataset of receipts from Indonesia. My own photos stay private (they show where I eat and part of my card number); the repo publishes only aggregate results, and anyone can rerun the CORD half.
+
+**Labels.** For my receipts, the starting point was the version I had already corrected in the app when splitting each bill. I then checked them against the photos (more on how below).
+
+**Pipelines.** Textract on its own, the production pipeline, and eight vision models reading the image directly: Claude Opus 5.5, Sonnet 5.5 and Haiku 5.5; GPT-6.2 Sol and GPT-6 Luna; Gemini 4 Argon, Gemini 3.8 Flash and Gemini 3.5 Flash-Lite. Every model got the same prompt, the same image and the same JSON schema, at its provider's default reasoning settings. I left out the most expensive flagship models. One full run cost $14.43.
+
+## Measuring the right thing
+
+My first metric was field accuracy, and it was misleading. One receipt from a New York bar prints a $2.61 card surcharge and a $17.40 tip. A model that reports a $20.01 tip gets two fields wrong, but nobody's share changes, because the app spreads tax, tips and fees across people in proportion to what they ordered.
+
+What a bill split needs is narrower: every item has the right price, on the right item, and the grand total is right. I call that **split-correct**. A receipt fails it if a price is wrong, if two prices are swapped between items, if an item is missing or invented, or if the total is off. Small typos in item names don't count, and neither do free modifier lines like "Caramelized Onions $0.00".
+
+## Results
+
+<ResultsChart />
+
+| Pipeline | Split-correct (148) | My receipts (80) | CORD (68) | Cost / receipt | Median time |
+|---|---|---|---|---|---|
+| Gemini 3.8 Flash | **96.6%** | 96.2% | 97.1% | $0.0069 | 10.3 s |
+| Claude Opus 5.5 | **95.9%** | 95.0% | 97.1% | $0.0306 | 6.8 s |
+| GPT-6.2 Sol | **95.9%** | 95.0% | 97.1% | $0.0099 | 7.2 s |
+| Gemini 4 Argon | 95.3% | 93.8% | 97.1% | $0.0089 | 9.2 s |
+| Claude Sonnet 5.5 | 91.9% | 93.8% | 89.7% | $0.0163 | 5.7 s |
+| GPT-6 Luna | 91.2% | 91.2% | 91.2% | $0.0007 | 9.3 s |
+| Gemini 3.5 Flash-Lite | 91.2% | 90.0% | 92.7% | $0.0017 | 3.0 s |
+| Claude Haiku 5.5 | 89.9% | 90.0% | 89.7% | $0.0010 | 5.6 s |
+| Textract + Claude repair (production) | 81.1% | 91.2% | 69.1% | $0.0201 | 3.6 s |
+| Textract only | 66.9% | 75.0% | 57.4% | $0.0100 | 3.0 s |
+
+On my own receipts, production is 4 to 5 points behind the best models. On CORD it falls far behind. The best three models get about 96% overall, and Gemini 3.8 Flash does it at about a third of production's cost per receipt. The trade-off is time: the three best models take 7 to 10 seconds per receipt instead of about 4, and Gemini 3.8 Flash had a slow tail (35 seconds at the 95th percentile).
+
+## Finding 1: some wrong readings add up perfectly
+
+The totals check is production's safety net, and it catches most mistakes. It misses the ones that change every number the same way.
+
+Indonesian receipts use a dot as the thousands separator, so "28.182" means 28,182 rupiah. Textract read it as 28.182. Every number on the receipt shrank by a factor of 1,000, the items, subtotal, tax and total still agreed with each other, and the check passed. That one pattern explains 17 of production's 21 misses on CORD.
+
+<figure className="mt-6">
+  <img
+    src="/writing/receipt-bench/cord-28182.jpg"
+    alt="A receipt showing TRAD KY TOAST CARTE 28.182, subtotal 28.182, PB-1 10% 2.818, total 31.000"
+    className="mx-auto w-full max-w-xs rounded-xl ring-1 ring-line"
+  />
+  <figcaption className="mt-2 text-center text-sm text-muted">
+    28.182 is 28,182 rupiah. Read as 28.182, the receipt still adds up. Receipt from CORD v2 (Park et al., 2019), CC BY 4.0.
+  </figcaption>
+</figure>
+
+A second example: a payment-app receipt printed a $59.40 gratuity on page two. Textract read page one, which adds up on its own, and returned a bill $59.40 short.
+
+Across the whole run, 25 of production's 28 wrong readings passed the check. A check that only tests whether the numbers agree with each other can't tell you whether they are the printed numbers.
+
+## Finding 2: cheap models fail in different ways
+
+Claude Haiku 5.5, GPT-6 Luna and Gemini 3.5 Flash-Lite cost about a tenth of a cent per receipt and land within two points of each other. Their mistakes are different, though.
+
+13 of Haiku's 15 wrong readings passed the totals check, so in an app they would reach users unnoticed. Flash-Lite made a similar number of mistakes, but only 7 passed the check, and it failed the check on 14 receipts it had read correctly. In a pipeline with a check, a false alarm costs one extra model call, and a silent error costs a user money. Two models with the same accuracy can be very different choices.
+
+## Finding 3: the models audited my labels
+
+Some of my labels started from what I had entered in the app, which records what I paid, not what's printed. If I added a tip after the meal, the app has it and the receipt doesn't.
+
+After each batch, I flagged every amount where at least five of the eight models agreed with each other and disagreed with my label, and checked the photo. Each flag pointed to a real problem, and I fixed 7 labels this way. One Mexican receipt prints "IVA incluido $18.62" (sales tax already included in the prices), where my label had $0 tax. The models were right.
+
+This only finds errors where the models are right and the label is wrong. If every model shares a blind spot, agreement hides it, so it supplements checking the photos rather than replacing it.
+
+## Limitations
+
+- The prompt was adapted from my production prompt, which was tuned on Claude.
+- 80 and 68 receipts are small samples. One receipt moves a score by more than a point, so treat gaps of one or two points as ties.
+- Some of my labels started from production's own output, which, if anything, flatters production.
+- Each pipeline ran once, with up to four requests in flight at a time.
+- CORD covers one country. My receipts cover three.
+
+## What I'm changing
+
+Mexican receipts print "$", so the production pipeline currently labels them as US dollars. That fix comes first. Next, I'll try a cheaper model for the second read (Gemini 3.8 Flash or GPT-6.2 Sol in place of Opus) and use receipt-bench to confirm accuracy holds. After that, the bigger question is whether hard receipts should skip Textract and go straight to a vision model. I'll write a follow-up with before-and-after numbers.
+
+## Try it
+
+The code, the CORD loader, the scorer and the full results are on [GitHub](https://github.com/grkapoor17/receipt-bench). To score your own pipeline on CORD:
+
+```bash
+pip install -e ".[all]"
+python -m receipt_bench.datasets.cord --split test --out data/cord
+python -m receipt_bench.run --dataset data/cord/test --pipeline gemini:gemini-3.8-flash --limit 70 --dry-run
+```
+
+If you build document extraction and want to compare notes, I'm on [GitHub](https://github.com/grkapoor17) and at [gautamkapoor.com](https://gautamkapoor.com).

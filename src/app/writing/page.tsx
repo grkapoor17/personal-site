@@ -21,8 +21,7 @@ export default function WritingPage() {
       <p className="mt-3 text-muted">Notes on building LLM products: evals, extraction, and agents.</p>
       {sorted.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed border-line p-6 text-muted">
-          First post coming soon: what recovering 76% of failed receipt scans taught me about LLM
-          fallbacks.
+          First post coming soon.
         </p>
       ) : (
         <ul className="mt-8 divide-y divide-line">
