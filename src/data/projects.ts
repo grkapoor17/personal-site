@@ -42,13 +42,16 @@ export const projects: Project[] = [
   {
     slug: "receipt-bench",
     name: "receipt-bench",
-    tagline: "Open-source benchmark for receipt and document extraction.",
+    tagline: "Open-source benchmark for receipt extraction: OCR vs. LLMs.",
+    metric: "10 pipelines · 148 labeled receipts · best 96.6% split-correct",
     description:
-      "Compares OCR-only, OCR + LLM repair, and direct vision-model pipelines on field accuracy, line-item F1, latency, and cost per document, with CI-gated evals that block regressions.",
-    stack: ["Python", "Claude API", "GitHub Actions"],
-    status: "building",
+      "Benchmarks AWS Textract, my production Textract + Claude repair pipeline, and Claude, GPT and Gemini models reading the image directly, scored on whether every person's share of the bill comes out right, plus latency and cost. Found errors that pass deterministic totals checks (like Indonesian 28.182 read as 28.182 instead of 28,182), and used model agreement to catch 7 errors in my own labels.",
+    stack: ["Python", "Claude API", "OpenAI API", "Gemini API", "AWS Textract", "GitHub Actions"],
+    status: "live",
     featured: true,
-    links: {},
+    links: {
+      repo: "https://github.com/grkapoor17/receipt-bench",
+    },
   },
   {
     slug: "ny-fanaticos",
