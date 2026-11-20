@@ -1,0 +1,85 @@
+import { SplitChart } from "@/components/SplitChart";
+
+export const metadata = {
+  title: "My girlfriend is vegetarian. Splitting by item saved her less than I expected.",
+  description:
+    "We tracked every shared bill from a trip to Mexico City in SplitNShare. Itemizing saved her about 3% overall, but the meals where I ordered meat tell a different story.",
+  openGraph: {
+    type: "article",
+    title: "My girlfriend is vegetarian. Splitting by item saved her less than I expected.",
+    description:
+      "Every shared bill from a trip to Mexico City, split by item. About 3% overall, 41% instead of 50% on the meals where I ordered meat.",
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+<p className="text-sm text-muted">November 19, 2026 · 5 min read</p>
+
+# My girlfriend is vegetarian. Splitting by item saved her less than I expected.
+
+My girlfriend and I have been together a few years, and we both earn a decent living. Sometimes I treat her, sometimes she treats me, but most of the time we split. She's vegetarian and I'm not, so at most restaurants I'm ordering the meat dishes and she's ordering the veg ones, and my half of the bill usually looks a lot more expensive than hers.
+
+I built [SplitNShare](https://splitnshare.ai), an app for splitting bills item by item, so I've always assumed it was quietly saving her a good amount compared with splitting 50/50. We just got back from a trip to Mexico City, and we logged every shared expense in the app, so I finally checked.
+
+It saved her about US$25. Less than I thought.
+
+## How we tracked it
+
+We made a group in the app called Mexico City and put everything in it: 27 expenses over the trip. For each meal one of us scanned the receipt and tapped who had what. Shared plates were split between us, and tax and tip were spread in proportion to what each person ordered.
+
+I left out the few things that weren't really shared: a couple of times I just paid for her coffee or tacos, and one set of tickets I covered. Everything else falls into two buckets:
+
+| | Total | Split |
+|---|---|---|
+| Ubers, museum and castle entry, lucha libre tickets (6) | MX$6,863 | 50/50 anyway |
+| Restaurants, cafés and bars (14) | MX$15,263 | item by item |
+
+The first bucket was always going to be even. All of the interesting stuff is in the second.
+
+## The number
+
+Across the 14 restaurant, café and bar bills, she paid **MX$7,175**. Half would have been **MX$7,632**. So itemizing saved her **MX$457, about US$25**. She paid 47% instead of 50%.
+
+## Where the money actually moved
+
+<SplitChart />
+
+Three meals did almost all the work, and they're the three where I went for the meat:
+
+- **La Once Mil:** I had the A5 wagyu, a black angus trompo taco, a robalo al pastor and a spicy tuna. She had a mushroom barbacoa, a squash-blossom quesadilla and a horchata. She paid 35% of the bill.
+- **Masala y Maíz:** we shared the starters, then I had shrimp and a biryani and she had a chile relleno. She paid 42%.
+- **Expendio de Maíz:** we shared almost everything, but I added a manchamanteles. She paid 43%.
+
+On those three meals together she paid **41%** instead of 50%, a saving of MX$512. That's more than her savings for the whole trip.
+
+Then it gets cancelled out. At Hanky Panky her cocktails cost more than mine. At one coffee stop she got a matcha latte and a croissant while I just had a croissant. Her veggie Subway with extra cheese cost more than my teriyaki chicken, and her mushroom pizza at Pizza Félix cost more than my pepperoni. None of these are big, but they add up, and on those bills itemizing actually helped me.
+
+Splitting food and drinks apart shows the same thing:
+
+| | Total | Her share | Itemizing saved her |
+|---|---|---|---|
+| Food | MX$9,416 | 44.7% | about MX$500 |
+| Drinks | MX$5,847 | 50.7% | −MX$43 |
+
+So I was right about the meals. On food, she saves real money when I'm ordering meat. The trip just had a lot of coffee, bakeries and cocktail bars, where nobody is ordering meat and the vegetarian part doesn't matter.
+
+## Why a couple is the smallest case
+
+There's another reason the number is small, and it has nothing to do with Mexico City. When two people split 50/50, the vegetarian only overpays by **half** the gap between the two orders. The other half is her own cheaper meal, coming back to her.
+
+At those three meat-heavy meals, my food cost about MX$295 more than hers per meal. Split 50/50, she would have covered half of that, about MX$148 a meal. Now put the same vegetarian at a table of eight where the other seven order like me. With an even split, she pays about seven-eighths of that gap: around MX$258 a meal, assuming everyone drinks about the same.
+
+So the bigger the group, and the bigger the meals, the more an even split costs the vegetarians at the table. Our trip was close to the best case for 50/50: two people, a lot of cafés, and Mexico City prices.
+
+## Limitations
+
+- This is one trip, two people and 14 bills. One more steak dinner or one fewer cocktail bar would move the result.
+- Pesos are converted at roughly 18.5 to the dollar.
+- I sorted items into food and drink by hand from the receipts.
+- The things we treated each other to aren't in the numbers, and that's most of how couples even things out anyway.
+
+## What I'd test next
+
+A bigger group, at American prices. Eight to ten people, a few vegetarians, a few dinners where the mains cost $30 to $50. I'd bet the vegetarians come out a lot further ahead there. If you run a trip like that through [SplitNShare](https://splitnshare.ai), I'd love to see the numbers.
+
+I'm on [GitHub](https://github.com/grkapoor17) and at [gautamkapoor.com](https://gautamkapoor.com).
