@@ -18,7 +18,7 @@ export default function WritingPage() {
   return (
     <section className="py-12">
       <h1 className="text-3xl font-semibold tracking-tight">Writing</h1>
-      <p className="mt-3 text-muted">Notes on building LLM products: evals, extraction, and agents.</p>
+      <p className="mt-3 text-muted">Notes on building LLM products (evals, extraction, agents) and on what the data from my app turns up.</p>
       {sorted.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed border-line p-6 text-muted">
           First post coming soon.
