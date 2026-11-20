@@ -1,0 +1,96 @@
+import { AdSpendChart } from "@/components/AdSpendChart";
+
+export const metadata = {
+  title: "I cut my best keyword's bid to save money. Apple just stopped showing my ad.",
+  description:
+    "A small Apple Search Ads experiment on SplitNShare: what happened when I lowered the bid on my best keyword, why the budget went to my worst one, and how putting it back took cost per install from $4.57 to about $3.30.",
+  openGraph: {
+    type: "article",
+    title: "I cut my best keyword's bid to save money. Apple just stopped showing my ad.",
+    description:
+      "Lowering a bid below the going price doesn't make clicks cheaper. It hands your budget to whatever keyword still wins.",
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+<p className="text-sm text-muted">November 20, 2026 · 5 min read</p>
+
+# I cut my best keyword's bid to save money. Apple just stopped showing my ad.
+
+I run a small Apple Search Ads campaign for [SplitNShare](https://splitnshare.ai), my app for splitting a receipt item by item. It's US-only, it spends about $10 a day, and for most of this year one keyword did almost all the work: **split receipt by item**, on broad match.
+
+In October I tried to make that campaign cheaper. For a week it got worse, and the reason turned out to be one I should have known already: a max bid is a ceiling, not a price.
+
+## Where it started
+
+From July 12 to October 3 the campaign spent $618 and got 135 installs, so **$4.57 per install**. My other campaigns were running at about $2.
+
+Three keywords did all of the spending:
+
+| Keyword | Share of spend | Installs | Per install |
+|---|---|---|---|
+| split receipt by item (broad) | 82% | 118 | $4.28 |
+| bill splitter (exact) | 15% | 13 | $7.11 |
+| split receipt (broad) | 3% | 4 | $5.07 |
+
+I'd been going through the keyword exports with Claude Code every week or so, and this table made the first fix obvious. **bill splitter** was costing $7.11 an install, two-thirds more than my main keyword, for 13 installs in three months. It had to go.
+
+## The change
+
+On October 11 I cut bill splitter's bid from $3.10 to $1.50, and split the campaign into three ad groups:
+
+- **Exact:** the exact-match keywords.
+- **Discovery:** the broad-match ones, including split receipt by item, with a long negative list so it wouldn't match junk.
+- **Competitor:** people searching for other bill-splitting apps, mostly **splitwise free**, bid at $2.25.
+
+And since split receipt by item was 82% of the spend at $4.28 an install, I lowered its max bid from **$2.25 to $1.50**. The idea was simple: bid less, pay less per tap, pay less per install.
+
+## What actually happened
+
+For the next eight days, split receipt by item showed up **15 times in total**. Before the change it had been getting about 74 impressions a day. It hadn't gotten cheaper; it had nearly stopped running.
+
+Spending didn't go down, though. The campaign spent more per day than before, about $10 instead of $7, and the money went to whatever could still win an auction. That was **splitwise free**, which took 83% of the week's spend at **$6.27 an install**.
+
+<AdSpendChart />
+
+## Why
+
+Apple Search Ads is an auction, and your max bid is the most you're willing to pay for a tap, not what you pay. In practice you pay roughly what it takes to beat the next advertiser. At a $2.25 max, split receipt by item had been costing me **$1.68 a tap** on average. That $1.68 was the going price for that search.
+
+So a $1.50 ceiling wasn't a discount. It was below the going price, and I lost almost every auction. Cutting a bid only saves money if the new bid is still above what you're already paying. I should have compared the new bid to my average cost per tap before changing it, and I didn't.
+
+The funny part is that the same thing happened to bill splitter, and there it was exactly what I wanted. At $1.50 the exact-match bill splitter got one impression all week. I'd switched off my worst keyword and my best keyword with the same move, and only meant to do one of them.
+
+## Putting it back
+
+On October 20 I set split receipt by item back to **$2.25** and paused the Competitor group. (I also had a theory that people searching for Splitwise weren't the kind of user who scans receipts. The usage data never clearly backed that up, so the reason I'm giving is the price.)
+
+The keyword came straight back to about 90 impressions a day, at **$1.75 a tap**. That's essentially the old price: raising the ceiling back didn't make me pay more per tap, it just let me win the auctions again.
+
+| Period | Spend | Installs | Per install |
+|---|---|---|---|
+| Jul 12 – Oct 3 (before) | $618 | 135 | $4.57 |
+| Oct 12 – 19 (bid at $1.50) | $83 | 14 | $5.93 |
+| Oct 20 – Nov 11 (back to $2.25) | $228 | 56 | $4.07 |
+| Nov 1 – 11 | $115 | 35 | $3.29 |
+
+Since the switch back, split receipt by item has delivered 52 installs at **$3.88** each, and the campaign is at about **$3.30** an install in November. Both keywords I cut, bill splitter at $7.11 and splitwise free at $6.27, are gone, and nearly every dollar now goes to the keyword that's earned it.
+
+## Why I trust this more than most of my tests
+
+Usually when a number moves I can't tell why, because three things changed at once. This time almost nothing else did. Same campaign, same country, about the same daily spend, the same App Store screenshots, and no new version of the app shipped between October 12 and November 11. The thing that changed was which keywords were allowed to win.
+
+## What I can't explain
+
+- **Part of the bad week was probably just a bad week.** My India campaign, which I didn't touch, also had a worse week from October 12 to 19 ($2.08 an install, against about $1.30 before). So not all of the $5.93 is my fault.
+- **The November drop isn't the bid.** From October 20 to 31 the campaign was at $5.39 an install. From November 1 it was $3.29, on the same keyword at the same bid, paying the same per tap. What changed is that more people who tapped went on to install, 55% instead of 35%. India didn't get better in November, so it isn't the whole market. I don't know what it is yet.
+- **Installs aren't users.** In November, new accounts scanning their first receipt went from under one a day to about two a day (all countries), and US downloads went from about 2 a day to 3.5. But that lift started 12 days after the switch, not right away, so I'm not crediting it to the switch.
+- **The numbers are small.** The bad week was 14 installs. One or two installs either way moves the cost per install by 50 cents.
+
+## What I'd tell myself in October
+
+1. **A max bid is a ceiling, not a price.** Before you lower one, check the average cost per tap you're already paying. If the new bid is under it, you're switching the keyword off.
+2. **When you starve a keyword, the money goes somewhere.** The budget doesn't wait for you. Look at where it went before you judge the change.
+3. **Cut keywords on cost per install, not on how much they spend.** My best keyword was also my most expensive line item. The ones to cut were the small ones at $7.
+
+If you run Apple Search Ads for a small app and have seen the November-style jump in conversion with nothing changed, I'd like to hear what it was. I'm on [GitHub](https://github.com/grkapoor17) and at [gautamkapoor.com](https://gautamkapoor.com).
