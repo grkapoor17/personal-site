@@ -1,0 +1,114 @@
+import { SetupChart } from "@/components/SetupChart";
+
+export const metadata = {
+  title: "I gave AI agents a semantic layer. Clean tables did most of the work.",
+  description:
+    "450 eval runs across Claude, GPT and Gemini on a warehouse full of traps: what a dbt semantic layer and an Agent Skill actually changed, and the two gaps in my own server the eval found.",
+  openGraph: {
+    type: "article",
+    title: "I gave AI agents a semantic layer. Clean tables did most of the work.",
+    description:
+      "Plain SQL on well-modelled tables scored 94%. The semantic layer and a skill took it to 97%, helped the cheapest model most, and cut tool calls by a quarter.",
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+<p className="text-sm text-muted">November 27, 2026 · 7 min read</p>
+
+# I gave AI agents a semantic layer. Clean tables did most of the work.
+
+I spent the last week and a half building [semantic-warehouse-mcp](https://github.com/grkapoor17/semantic-warehouse-mcp), an MCP server that lets an AI agent answer questions from a data warehouse. It has two halves. The first is **guardrails**: the agent can only read, one query at a time, and the database itself refuses anything else. The second is a **semantic layer**: instead of guessing what "points" or "a player" means from column names, the agent can ask for a metric, and the server compiles the team's agreed definition from dbt into SQL. That compiler matches dbt's own engine, MetricFlow, on all 12 reference queries I gave it.
+
+The pitch for semantic layers is that they make agents more accurate. I wanted a number, so I built an eval. The number was smaller than I expected, and more interesting.
+
+## A warehouse full of traps
+
+I needed data with real mess in it, so I built a warehouse of Fantasy Premier League history: 11 seasons, 258,000 player-match rows, cleaned up with dbt. FPL turned out to be full of the kind of thing that breaks text-to-SQL:
+
+| Trap | What goes wrong |
+|---|---|
+| IDs and names change every season | Grouping by display name splits Salah's 2,208 career points into "Salah" (1,741) and "M.Salah" (467) |
+| Two people, one name | There are two Danny Wards: a goalkeeper with 96 points and a forward with 22. Adding them gives 118, which is nobody |
+| Team vs. player totals | Arsenal's players scored 85 goals in 2023-24; Arsenal scored 91 (six were opponents' own goals) |
+| Managers listed as players | In 2024-25 FPL added real managers as "players"; David Moyes would rank second in Everton's points |
+| Tiny samples | Rank "points per 90 minutes" with no minimum and three players who played one minute each top the list at 90.0 |
+
+I wrote 50 questions around traps like these. Every gold answer comes from SQL I wrote by hand, never from the server I was testing, and I cross-checked 14 of them against MetricFlow.
+
+Then I asked each question in three setups:
+
+- **A: SQL tools only.** List tables, describe them, run SQL. What most "chat with your warehouse" tools do.
+- **B: + semantic layer.** A, plus tools to list metrics and dimensions and query metrics by name.
+- **C: + semantic layer + skill.** B, plus an [Agent Skill](https://github.com/grkapoor17/semantic-warehouse-mcp/blob/main/skills/warehouse-analysis/SKILL.md): a page of instructions on how to use the tools well (look up exact names before filtering, require a minimum sample when ranking by a rate, report what definition you used).
+
+Three models, chosen to be cheap: Claude Haiku 5.5, GPT-6.1 Terra and Gemini 3.8 Flash. That's 450 runs, for $8.59.
+
+## The results
+
+<SetupChart />
+
+| Questions correct (of 47) | A: SQL only | B: + semantic | C: + semantic + skill |
+|---|---|---|---|
+| Claude Haiku 5.5 | 89.4% | 93.6% | 95.7% |
+| GPT-6.1 Terra | 95.7% | 95.7% | 97.9% |
+| Gemini 3.8 Flash | 97.9% | 97.9% | 97.9% |
+| **All three** | **94.3%** | **95.7%** | **97.2%** |
+| Tool calls per question | 6.2 | 5.6 | 4.6 |
+
+The semantic layer helped, and the skill helped more. But look at the first column. **Plain SQL already got 94% right.**
+
+## Clean tables did most of the work
+
+I expected setup A to fall for the cross-season traps. It didn't. Every model got Salah's 2,208 right without a semantic layer, because the dbt models I'd already built had a stable `player_code` on every row and a `dim_players` table with one row per real person. The agents just used them.
+
+They did that from names alone. When I checked later, I found the warehouse had no table or column descriptions at all: dbt only copies your YAML descriptions into the database if you turn on a setting called `persist_docs`, and I hadn't. Good naming carried the whole thing.
+
+If you're deciding where to spend effort before pointing agents at your data, this is the cheap win. Model the tables properly first.
+
+## The skill helped the cheapest model most
+
+Gemini scored 97.9% in every setup; the extra tools neither helped nor hurt it. The gains all came from the weaker models, and mostly from Haiku, which went from 89% to 96%.
+
+The clearest case was the two Danny Wards. Asked "how many FPL points has Danny Ward scored?", Haiku:
+
+- with SQL only, found the goalkeeper and answered **96**;
+- with the semantic layer, found both and **added them together: 118**;
+- with the skill, reported **both players separately**, which is the right answer.
+
+It made the same mistake with the two Aaron Ramseys, and the skill fixed that too. The semantic layer gave it better tools; the skill taught it to notice there were two people.
+
+The skill had limits. GPT-6.1 Terra ranked the one-minute players top for "best points per 90" in all three setups, including the one where the instructions explicitly say to use a minimum sample. It even added Salah at the bottom with a note about a 900-minute minimum, then left the one-minute players above him.
+
+## Fewer steps, not cheaper
+
+With the skill, agents needed a quarter fewer tool calls (6.2 to 4.6). I assumed that would make answers cheaper. It made them more expensive: average cost per question went from $0.016 to $0.023, because the skill adds about 2,200 tokens to every request and the metric tool sends back the SQL it ran. Fewer steps, but every step carries more.
+
+## The eval found the gaps in my own server
+
+The question almost every run got wrong was "how many FPL points did all players score in 2024-25?" Eight of nine runs counted the 20 managers as players.
+
+I had written that caveat down. It was in the semantic layer: "includes 20 real managers in 2024-25; filter them out for player-only questions." But I'd written it on the table-level description, and my server only showed agents the descriptions of individual metrics and dimensions. The warning existed and no agent could see it.
+
+So I fixed both gaps the eval had found. I turned on `persist_docs` so the database carries its descriptions, and made `list_metrics` include each metric's table notes. Then I re-ran 16 questions: every one that any run had missed, the ones the fixes were aimed at, and three easy ones to check nothing got worse.
+
+| Same 16 questions | A: SQL only | B: + semantic | C: + semantic + skill |
+|---|---|---|---|
+| Before the fixes | 40 / 48 | 42 / 48 | 44 / 48 |
+| After | 42 / 48 | 45 / 48 | **47 / 48** |
+
+The managers question went from **1 in 9 to 7 in 9** correct, and every run with the semantic tools got it right.
+
+## What I'd tell a team
+
+1. **Model your tables before you buy a semantic layer.** Stable keys and honest names got 94% on their own.
+2. **Check that your descriptions reach the agent.** Writing a caveat down isn't the same as the agent seeing it. Mine were in the wrong place twice.
+3. **The skill matters as much as the tools.** The biggest single fix (people with the same name) came from a page of instructions, not from the semantic layer.
+4. **Test your semantic layer like code.** I only found my gaps because I had 50 questions with known answers.
+
+## Caveats
+
+- One run per question, so the gaps between setups are a few answers each. Read them as directions, not as significant results.
+- My first answer-format instructions used example values that happened to equal three gold answers. I dropped those three questions, which is why the tables say 47.
+- I used cheap models on purpose. Flagship models may need the help less, as Gemini already suggests.
+
+The [server, the eval and every question](https://github.com/grkapoor17/semantic-warehouse-mcp) are on GitHub, along with the [FPL warehouse](https://github.com/grkapoor17/semantic-warehouse-mcp/tree/main/examples/fpl) if you want to try your own agent on it.
