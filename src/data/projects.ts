@@ -54,6 +54,21 @@ export const projects: Project[] = [
     },
   },
   {
+    slug: "semantic-warehouse-mcp",
+    name: "semantic-warehouse-mcp",
+    tagline: "MCP server giving AI agents safe SQL and dbt semantic-layer metrics.",
+    metric: "450-run eval · 94% → 97% accuracy · 25% fewer tool calls",
+    description:
+      "A TypeScript MCP server: read-only guardrails enforced by the database engine and its own parser, plus a compiler from dbt's semantic manifest to SQL that matches dbt MetricFlow on 12/12 reference queries. Evaluated with Claude, GPT and Gemini on a Fantasy Premier League warehouse built with dbt; the eval also found two gaps in the server, and fixing them took a hard question from 1/9 to 7/9 correct.",
+    stack: ["TypeScript", "MCP", "DuckDB", "dbt", "Claude API", "OpenAI API", "Gemini API"],
+    status: "live",
+    featured: true,
+    links: {
+      repo: "https://github.com/grkapoor17/semantic-warehouse-mcp",
+      writeup: "/writing/semantic-warehouse-mcp",
+    },
+  },
+  {
     slug: "ny-fanaticos",
     name: "nyfanaticos.com",
     tagline: "Website for the NYC football club I captain.",

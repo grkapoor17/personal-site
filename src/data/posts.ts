@@ -13,6 +13,13 @@ export type Post = {
 
 export const posts: Post[] = [
   {
+    title: "I gave AI agents a semantic layer. Clean tables did most of the work.",
+    summary:
+      "450 eval runs across Claude, GPT and Gemini on a warehouse full of traps. Plain SQL on well-modelled tables scored 94%; a semantic layer and an Agent Skill took it to 97% and helped the cheapest model most. The eval also found two gaps in my own server.",
+    date: "2026-11-27",
+    href: "/writing/semantic-warehouse-mcp",
+  },
+  {
     title: "I cut my best keyword's bid to save money. Apple just stopped showing my ad.",
     summary:
       "An Apple Search Ads experiment on SplitNShare: lowering a bid below the going price handed the budget to my worst keyword. Putting it back took cost per install from $4.57 to about $3.30.",
